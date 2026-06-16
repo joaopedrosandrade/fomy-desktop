@@ -1,0 +1,65 @@
+{
+  "name": "fomy",
+  "productName": "Fomy",
+  "version": "1.0.0",
+  "description": "Fomy - Gestão para Restaurantes",
+  "main": "main.js",
+  "author": "Fomy",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "cross-env NODE_ENV=development electron .",
+    "postinstall": "node scripts/generate-icon.js",
+    "prebuild": "node scripts/generate-icon.js",
+    "build": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-reload": "^1.5.0",
+    "rcedit": "^4.0.1",
+    "to-ico": "^1.1.5"
+  },
+  "build": {
+    "appId": "com.fomy.desktop",
+    "productName": "Fomy",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "assets/favicon.ico",
+      "assets/icon.png",
+      "assets/icon.ico"
+    ],
+    "afterPack": "./scripts/after-pack.js",
+    "extraFiles": [
+      {
+        "from": "assets/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "include": "build/installer.nsh",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "shortcutName": "Fomy"
+    }
+  }
+}
