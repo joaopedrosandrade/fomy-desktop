@@ -1,6 +1,7 @@
 const pairingConfig = require('./pairing-config');
 const printerConfig = require('./printer-config');
 const printerService = require('./printer-service');
+const htmlCupomPrinter = require('./html-cupom-printer');
 
 const POLL_MS = 4000;
 
@@ -130,15 +131,28 @@ async function fetchEscPosBuffer(cupomUrl) {
  * @param {string} apiBaseUrl
  * @param {string} token
  */
+function shouldPrintHtmlCupom(printer) {
+  return printer && printer.type === 'windows';
+}
+
 async function processJob(job, apiBaseUrl, token) {
-  const escposUrl = job.cupom_url_escpos || job.cupom_url_thermal || job.cupom_url;
-  if (!escposUrl) {
+  const htmlUrl = job.cupom_url;
+  const escposUrl = job.cupom_url_escpos;
+  const printer = printerConfig.getPrinterConfig();
+
+  if (!htmlUrl && !escposUrl) {
     throw new Error(`Job #${job.job_id} sem URL de cupom.`);
   }
 
-  const buffer = await fetchEscPosBuffer(escposUrl);
-  const printer = printerConfig.getPrinterConfig();
-  await printerService.print(buffer, printer);
+  if (shouldPrintHtmlCupom(printer) && htmlUrl) {
+    await htmlCupomPrinter.printHtmlUrl(htmlUrl, printer.printerName);
+  } else {
+    if (!escposUrl) {
+      throw new Error(`Job #${job.job_id} sem URL ESC/POS (impressora ${printer?.type || 'desconhecida'}).`);
+    }
+    const buffer = await fetchEscPosBuffer(escposUrl);
+    await printerService.print(buffer, printer);
+  }
   await confirmJobs(apiBaseUrl, token, [job.job_id]);
 
   const label = `#${job.numero || job.invoice_id}`;
