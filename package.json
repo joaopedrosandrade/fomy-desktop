@@ -13,6 +13,9 @@
     "prebuild": "node scripts/generate-icon.js",
     "build": "electron-builder --win --x64"
   },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
   "devDependencies": {
     "cross-env": "^7.0.3",
     "electron": "^35.0.0",
@@ -29,9 +32,18 @@
     },
     "files": [
       "main.js",
+      "preload/**/*",
+      "ipc/**/*",
+      "services/**/*",
+      "windows/**/*",
+      "renderer/**/*",
+      "scripts/powershell/**/*",
       "assets/favicon.ico",
       "assets/icon.png",
       "assets/icon.ico"
+    ],
+    "asarUnpack": [
+      "scripts/powershell/**/*"
     ],
     "afterPack": "./scripts/after-pack.js",
     "extraFiles": [

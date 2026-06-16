@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Configuração de Impressora — Fomy</title>
+  <link rel="stylesheet" href="printer-settings.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Impressora</h1>
+      <p class="subtitle">Configure a impressora térmica para o Fomy Desktop</p>
+    </header>
+
+    <section class="card status-card">
+      <div class="status-row">
+        <span id="status-dot" class="status-dot"></span>
+        <div>
+          <strong id="status-title">Verificando...</strong>
+          <p id="status-message" class="muted"></p>
+        </div>
+      </div>
+      <pre id="status-config" class="config-preview hidden"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Tipo de conexão</h2>
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="bluetooth">Bluetooth</button>
+        <button type="button" class="tab" data-tab="network">Rede</button>
+        <button type="button" class="tab" data-tab="windows">Windows</button>
+      </div>
+
+      <div id="panel-bluetooth" class="panel active">
+        <p class="hint">Pareie a impressora em Configurações → Bluetooth do Windows antes de conectar.</p>
+        <label for="bt-select">Dispositivo Bluetooth</label>
+        <div class="row">
+          <select id="bt-select">
+            <option value="">Carregando...</option>
+          </select>
+          <button type="button" id="bt-refresh" class="secondary">Atualizar</button>
+        </div>
+        <label for="bt-baud">Baud rate (opcional)</label>
+        <select id="bt-baud">
+          <option value="">Detectar automaticamente</option>
+          <option value="9600">9600</option>
+          <option value="115200">115200</option>
+          <option value="38400">38400</option>
+          <option value="19200">19200</option>
+        </select>
+        <button type="button" id="bt-save" class="primary">Conectar Bluetooth</button>
+      </div>
+
+      <div id="panel-network" class="panel">
+        <label for="net-host">Endereço IP</label>
+        <input id="net-host" type="text" placeholder="192.168.1.100" autocomplete="off">
+        <label for="net-port">Porta</label>
+        <input id="net-port" type="number" value="9100" min="1" max="65535">
+        <button type="button" id="net-save" class="primary">Conectar via Rede</button>
+      </div>
+
+      <div id="panel-windows" class="panel">
+        <label for="win-select">Impressora instalada no Windows</label>
+        <div class="row">
+          <select id="win-select">
+            <option value="">Carregando...</option>
+          </select>
+          <button type="button" id="win-refresh" class="secondary">Atualizar</button>
+        </div>
+        <button type="button" id="win-save" class="primary">Usar esta impressora</button>
+      </div>
+    </section>
+
+    <section class="card actions">
+      <button type="button" id="btn-test" class="secondary">Testar impressão</button>
+      <button type="button" id="btn-clear" class="danger">Remover configuração</button>
+    </section>
+
+    <p id="feedback" class="feedback hidden"></p>
+  </main>
+
+  <script src="printer-settings.js"></script>
+</body>
+</html>
