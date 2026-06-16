@@ -1,7 +1,6 @@
 const pairingConfig = require('./pairing-config');
 const printerConfig = require('./printer-config');
 const printerService = require('./printer-service');
-const htmlCupomPrinter = require('./html-cupom-printer');
 
 const POLL_MS = 4000;
 
@@ -108,6 +107,34 @@ async function confirmJobs(apiBaseUrl, token, jobIds) {
   return data;
 }
 
+/**
+ * @param {string} apiBaseUrl
+ * @param {string} token
+ * @param {number[]} jobIds
+ */
+async function releaseJobs(apiBaseUrl, token, jobIds) {
+  const url = `${apiBaseUrl}/estacao-impressao/${encodeURIComponent(token)}/liberar`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ job_ids: jobIds }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao liberar job na fila (HTTP ${response.status})`);
+  }
+
+  const data = await response.json();
+  if (!data || !data.success) {
+    throw new Error('Servidor não liberou o job na fila.');
+  }
+
+  return data;
+}
+
 /** @param {string} cupomUrl */
 async function fetchEscPosBuffer(cupomUrl) {
   const response = await fetch(cupomUrl, {
@@ -131,28 +158,15 @@ async function fetchEscPosBuffer(cupomUrl) {
  * @param {string} apiBaseUrl
  * @param {string} token
  */
-function shouldPrintHtmlCupom(printer) {
-  return printer && printer.type === 'windows';
-}
-
 async function processJob(job, apiBaseUrl, token) {
-  const htmlUrl = job.cupom_url;
   const escposUrl = job.cupom_url_escpos;
+  if (!escposUrl) {
+    throw new Error(`Job #${job.job_id} sem URL ESC/POS.`);
+  }
+
   const printer = printerConfig.getPrinterConfig();
-
-  if (!htmlUrl && !escposUrl) {
-    throw new Error(`Job #${job.job_id} sem URL de cupom.`);
-  }
-
-  if (shouldPrintHtmlCupom(printer) && htmlUrl) {
-    await htmlCupomPrinter.printHtmlUrl(htmlUrl, printer.printerName);
-  } else {
-    if (!escposUrl) {
-      throw new Error(`Job #${job.job_id} sem URL ESC/POS (impressora ${printer?.type || 'desconhecida'}).`);
-    }
-    const buffer = await fetchEscPosBuffer(escposUrl);
-    await printerService.print(buffer, printer);
-  }
+  const buffer = await fetchEscPosBuffer(escposUrl);
+  await printerService.print(buffer, printer);
   await confirmJobs(apiBaseUrl, token, [job.job_id]);
 
   const label = `#${job.numero || job.invoice_id}`;
@@ -212,6 +226,12 @@ async function pollOnce() {
         const message = error instanceof Error ? error.message : 'Erro ao imprimir job';
         console.error('[Fomy Desktop] Erro no job:', message);
         setError(message);
+        try {
+          await releaseJobs(pairing.apiBaseUrl, pairing.token, [job.job_id]);
+        } catch (releaseError) {
+          const releaseMessage = releaseError instanceof Error ? releaseError.message : 'Falha ao liberar job';
+          console.error('[Fomy Desktop] Liberar job:', releaseMessage);
+        }
       }
     }
   } catch (error) {
