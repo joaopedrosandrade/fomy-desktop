@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('fomyDesktop', {
     /** Envia texto simples (UTF-8 por padrão) */
     printText: (text, options) => ipcRenderer.invoke('fomy:printer:print-text', text, options),
 
+    /** Impressão silenciosa de cupom via URL assinada (ESC/POS) */
+    printCupomFromUrl: (cupomUrl) => ipcRenderer.invoke('fomy:printer:print-cupom-url', cupomUrl),
+
     onStatusChange: (callback) => {
       if (typeof callback !== 'function') {
         throw new Error('callback deve ser uma função');

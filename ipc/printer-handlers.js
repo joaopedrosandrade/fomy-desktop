@@ -1,4 +1,5 @@
 const { ipcMain } = require('electron');
+const cupomPrint = require('../services/cupom-print');
 const printerConfig = require('../services/printer-config');
 const printerService = require('../services/printer-service');
 
@@ -98,6 +99,10 @@ function registerPrinterHandlers() {
     const config = printerConfig.getPrinterConfig();
     await printerService.print(buffer, config);
     return { ok: true };
+  });
+
+  ipcMain.handle('fomy:printer:print-cupom-url', async (_event, cupomUrl) => {
+    return cupomPrint.printCupomFromUrl(String(cupomUrl || ''));
   });
 }
 
