@@ -1,7 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('fomyDesktop', {
-  version: '1.0.0',
   isDesktop: true,
 
   printer: {
@@ -50,6 +49,23 @@ contextBridge.exposeInMainWorld('fomyDesktop', {
       const listener = (_event, status) => callback(status);
       ipcRenderer.on('fomy:print-queue-status', listener);
       return () => ipcRenderer.removeListener('fomy:print-queue-status', listener);
+    },
+  },
+
+  system: {
+    openPrinterSettings: () => ipcRenderer.invoke('fomy:system:open-printer-settings'),
+  },
+
+  events: {
+    onPrintersListRefresh: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('fomy:printers-list:refresh', listener);
+      return () => ipcRenderer.removeListener('fomy:printers-list:refresh', listener);
+    },
+    onActivePrinterRefresh: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('fomy:active-printer:refresh', listener);
+      return () => ipcRenderer.removeListener('fomy:active-printer:refresh', listener);
     },
   },
 });

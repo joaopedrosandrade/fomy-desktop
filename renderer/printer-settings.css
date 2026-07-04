@@ -202,3 +202,23 @@ button.danger {
   color: #c92a2a;
   border: 1px solid #ffc9c9;
 }
+
+.printer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.printer-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.printer-list li:last-child {
+  border-bottom: none;
+}
+
+.printer-list .empty {
+  color: #868e96;
+  font-size: 0.9rem;
+}

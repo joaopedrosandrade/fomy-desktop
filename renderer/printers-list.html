@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Impressoras Disponíveis — Fomy</title>
+  <link rel="stylesheet" href="printer-settings.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Impressoras Disponíveis</h1>
+      <p class="subtitle">Impressoras detectadas no Windows, Bluetooth e portas seriais</p>
+    </header>
+
+    <section class="card">
+      <div class="row">
+        <button type="button" id="btn-refresh" class="secondary">Atualizar lista</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Bluetooth</h2>
+      <ul id="list-bluetooth" class="printer-list muted">Carregando...</ul>
+    </section>
+
+    <section class="card">
+      <h2>Windows</h2>
+      <ul id="list-windows" class="printer-list muted">Carregando...</ul>
+    </section>
+
+    <section class="card">
+      <h2>Portas seriais</h2>
+      <ul id="list-serial" class="printer-list muted">Carregando...</ul>
+    </section>
+
+    <p id="feedback" class="feedback hidden"></p>
+  </main>
+
+  <script src="printers-list.js"></script>
+</body>
+</html>

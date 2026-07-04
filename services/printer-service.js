@@ -293,31 +293,62 @@ async function configureBluetooth(options = {}) {
     );
   }
 
+  // A porta de ENTRADA (incoming) não aceita escrita. Monta a lista de portas
+  // candidatas priorizando a selecionada (se for de saída) e depois as demais
+  // portas de saída disponíveis.
+  const outgoingPorts = bluetoothDevices
+    .filter((item) => item.direction !== 'incoming')
+    .map((item) => item.path.toUpperCase());
+
+  const candidatePaths = [];
+  if (device.direction !== 'incoming') {
+    candidatePaths.push(device.path.toUpperCase());
+  }
+  for (const portPath of outgoingPorts) {
+    if (!candidatePaths.includes(portPath)) {
+      candidatePaths.push(portPath);
+    }
+  }
+  // Se a porta escolhida é de entrada e não há nenhuma de saída detectada,
+  // ainda tentamos a porta escolhida como último recurso.
+  if (candidatePaths.length === 0) {
+    candidatePaths.push(device.path.toUpperCase());
+  }
+
   const baudRates = options.baudRate ? [options.baudRate] : BLUETOOTH_BAUD_RATES;
   const testBuffer = Buffer.from([0x1b, 0x40]);
   let workingBaudRate = null;
+  let workingPath = null;
   let lastError = null;
 
-  for (const baudRate of baudRates) {
-    try {
-      await windowsPrint.printSerial(testBuffer, device.path, baudRate);
-      workingBaudRate = baudRate;
-      break;
-    } catch (error) {
-      lastError = error;
+  for (const portPath of candidatePaths) {
+    for (const baudRate of baudRates) {
+      try {
+        await windowsPrint.printSerial(testBuffer, portPath, baudRate);
+        workingBaudRate = baudRate;
+        workingPath = portPath;
+        break;
+      } catch (error) {
+        lastError = error;
+      }
     }
+    if (workingPath) break;
   }
 
-  if (!workingBaudRate) {
+  if (!workingPath) {
     const message = lastError instanceof Error ? lastError.message : 'Falha na comunicação';
+    const isIncoming = device.direction === 'incoming';
+    const hint = isIncoming
+      ? ` A porta ${device.path} é de ENTRADA (recebimento) e não pode imprimir. Selecione a porta "de saída" do dispositivo Bluetooth.`
+      : ' Verifique se a impressora está ligada, conectada (não só pareada) e próxima ao PC.';
     throw new Error(
-      `Não foi possível conectar na ${device.path}. Verifique se a impressora está ligada, pareada e próxima ao PC. (${message})`,
+      `Não foi possível conectar na ${device.path}.${hint} (${message})`,
     );
   }
 
   return {
     type: 'bluetooth',
-    path: device.path,
+    path: workingPath,
     baudRate: workingBaudRate,
     deviceName: device.name,
   };

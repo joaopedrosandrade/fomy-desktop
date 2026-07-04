@@ -1,4 +1,4 @@
-const { BrowserWindow, Menu, shell } = require('electron');
+const { BrowserWindow } = require('electron');
 const path = require('path');
 
 /** @type {import('electron').BrowserWindow | null} */
@@ -23,7 +23,7 @@ function openPrinterSettings() {
     height: 720,
     minWidth: 480,
     minHeight: 600,
-    title: 'Configuração de Impressora — Fomy',
+    title: 'Adicionar Impressora — Fomy',
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
     webPreferences: {
@@ -44,35 +44,6 @@ function openPrinterSettings() {
   return settingsWindow;
 }
 
-function buildApplicationMenu({ onOpenPrinterSettings }) {
-  const template = [
-    {
-      label: 'Fomy',
-      submenu: [
-        {
-          label: 'Configurar impressora...',
-          accelerator: 'Ctrl+Shift+P',
-          click: onOpenPrinterSettings,
-        },
-        { type: 'separator' },
-        { role: 'quit', label: 'Sair' },
-      ],
-    },
-    {
-      label: 'Ajuda',
-      submenu: [
-        {
-          label: 'Abrir app Fomy',
-          click: () => shell.openExternal('https://app.fomy.com.br/'),
-        },
-      ],
-    },
-  ];
-
-  return Menu.buildFromTemplate(template);
-}
-
 module.exports = {
-  buildApplicationMenu,
   openPrinterSettings,
 };

@@ -1,7 +1,7 @@
 {
   "name": "fomy",
   "productName": "Fomy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fomy - Gestão para Restaurantes",
   "main": "main.js",
   "author": "Fomy",
@@ -11,10 +11,13 @@
     "start": "cross-env NODE_ENV=development electron .",
     "postinstall": "node scripts/generate-icon.js",
     "prebuild": "node scripts/generate-icon.js",
-    "build": "electron-builder --win --x64"
+    "build": "electron-builder --win --x64 --publish never",
+    "build:output": "electron-builder --win --x64 --publish never --config.directories.output=build-output",
+    "release": "electron-builder --win --x64 --publish always"
   },
   "dependencies": {
-    "electron-store": "^8.2.0"
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
@@ -54,6 +57,7 @@
     ],
     "win": {
       "signAndEditExecutable": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "target": [
         {
           "target": "nsis",
@@ -72,6 +76,13 @@
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
       "shortcutName": "Fomy"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "joaopedrosandrade",
+      "repo": "fomy-desktop",
+      "releaseType": "release",
+      "vPrefixedTagName": true
     }
   }
 }

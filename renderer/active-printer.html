@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Impressora Ativa — Fomy</title>
+  <link rel="stylesheet" href="printer-settings.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Impressora Ativa</h1>
+      <p class="subtitle">Impressora configurada para impressão automática</p>
+    </header>
+
+    <section class="card status-card">
+      <div class="status-row">
+        <span id="status-dot" class="status-dot"></span>
+        <div>
+          <strong id="status-title">Verificando...</strong>
+          <p id="status-message" class="muted"></p>
+        </div>
+      </div>
+      <pre id="status-config" class="config-preview hidden"></pre>
+    </section>
+
+    <section class="card actions">
+      <button type="button" id="btn-test" class="secondary">Testar impressão</button>
+      <button type="button" id="btn-configure" class="primary">Alterar impressora</button>
+      <button type="button" id="btn-clear" class="danger">Remover</button>
+    </section>
+
+    <p id="feedback" class="feedback hidden"></p>
+  </main>
+
+  <script src="active-printer.js"></script>
+</body>
+</html>
