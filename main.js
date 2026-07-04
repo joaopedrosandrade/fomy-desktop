@@ -28,6 +28,11 @@ function getWindowTitle() {
   return `Fomy Desktop - v${app.getVersion()}`;
 }
 
+function applyWindowTitle() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setTitle(getWindowTitle());
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -57,24 +62,22 @@ function createWindow() {
     },
   });
   Menu.setApplicationMenu(menu);
-  mainWindow.setMenu(menu);
-  mainWindow.setAutoHideMenuBar(false);
-  mainWindow.setMenuBarVisibility(true);
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.setMenuBarVisibility(true);
+    applyWindowTitle();
     mainWindow.maximize();
     mainWindow.show();
   });
 
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.setMenuBarVisibility(true);
-    notifyPrinterStatus();
+  // Impede o site de sobrescrever o título — mantém "Fomy Desktop - vX.X.X"
+  mainWindow.webContents.on('page-title-updated', (event) => {
+    event.preventDefault();
+    applyWindowTitle();
   });
 
-  // Garante que o menu não fique oculto após Alt ou foco na página web.
-  mainWindow.on('focus', () => {
-    mainWindow.setMenuBarVisibility(true);
+  mainWindow.webContents.on('did-finish-load', () => {
+    applyWindowTitle();
+    notifyPrinterStatus();
   });
 
   mainWindow.on('closed', () => {
