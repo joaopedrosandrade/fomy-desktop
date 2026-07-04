@@ -1,9 +1,12 @@
 name: Release
 
+# Publica o instalador a cada push no master quando a versão do package.json
+# ainda não tiver release (tag v{versão} inexistente).
+
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
 
 permissions:
   contents: write
@@ -15,23 +18,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar se precisa publicar
+        id: check
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          git fetch --tags --force
+
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} já existe — pulando."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Publicando release ${TAG}..."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Node.js
+        if: steps.check.outputs.skip != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Instalar dependências
+        if: steps.check.outputs.skip != 'true'
         run: npm ci
 
-      - name: Configurar autenticação de update (repo privado)
+      - name: Configurar update (repositório público)
+        if: steps.check.outputs.skip != 'true'
         env:
-          GH_UPDATE_TOKEN: ${{ secrets.GH_UPDATE_TOKEN }}
-          GITHUB_REPO_PRIVATE: 'true'
+          GITHUB_REPO_PRIVATE: 'false'
         run: node scripts/prepare-update-config.js
 
       - name: Build e publicar no GitHub Releases
+        if: steps.check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run release

@@ -13,24 +13,24 @@ O Fomy Desktop usa **electron-updater** + **GitHub Releases** para notificar e i
 
 ### Fluxo automático (configurado)
 
-A cada **push no `master`**:
+A cada **push no `master`** com versão nova no `package.json`:
 
-1. Workflow **Auto Tag** lê a versão do `package.json` e cria a tag `v{versão}` (se ainda não existir).
-2. Workflow **Release** detecta a tag e gera o instalador + publica no GitHub Releases.
+1. Workflow **Release** verifica se já existe a tag `v{versão}`.
+2. Se não existir → gera o instalador e publica no **GitHub Releases** com `latest.yml`.
 
 **O que você precisa fazer:**
 
-1. Incremente `"version"` em `package.json` (ex.: `1.0.4` → `1.0.5`).
+1. Incremente `"version"` em `package.json` (ex.: `1.0.6` → `1.0.7`).
 2. Commit e push:
    ```bash
    git add .
    git commit -m "sua mensagem"
    git push origin master
    ```
-3. Aguarde os workflows em **Actions** (Auto Tag → Release).
+3. Aguarde o workflow **Release** em **Actions** (~5–10 min).
 4. Confira em **Releases**.
 
-> Se a versão no `package.json` não mudou, a tag já existente não é recriada — incremente a versão para cada release nova.
+> Incremente a versão no `package.json` para cada release nova.
 
 ### Opção A — Tag manual (alternativa)
 
