@@ -25,6 +25,12 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      - name: Configurar autenticação de update (repo privado)
+        env:
+          GH_UPDATE_TOKEN: ${{ secrets.GH_UPDATE_TOKEN }}
+          GITHUB_REPO_PRIVATE: 'true'
+        run: node scripts/prepare-update-config.js
+
       - name: Build e publicar no GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

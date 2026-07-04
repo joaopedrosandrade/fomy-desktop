@@ -1,7 +1,7 @@
 {
   "name": "fomy",
   "productName": "Fomy",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Fomy - Gestão para Restaurantes",
   "main": "main.js",
   "author": "Fomy",
@@ -40,6 +40,7 @@
       "services/**/*",
       "windows/**/*",
       "renderer/**/*",
+      "config/update-auth.json",
       "scripts/powershell/**/*",
       "assets/favicon.ico",
       "assets/icon.png",
@@ -82,7 +83,8 @@
       "owner": "joaopedrosandrade",
       "repo": "fomy-desktop",
       "releaseType": "release",
-      "vPrefixedTagName": true
+      "vPrefixedTagName": true,
+      "private": true
     }
   }
 }

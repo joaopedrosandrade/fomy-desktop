@@ -1,3 +1,4 @@
+config/update-auth.json
 node_modules/
 dist/
 dist-*/

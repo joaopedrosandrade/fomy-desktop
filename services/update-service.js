@@ -1,5 +1,6 @@
 const { autoUpdater } = require('electron-updater');
 const { app, dialog, BrowserWindow } = require('electron');
+const { loadUpdateAuth } = require('./update-auth');
 
 /** @type {import('electron').BrowserWindow | null} */
 let parentWindow = null;
@@ -88,7 +89,32 @@ function isBenignError(message) {
   return text.includes('no published versions')
     || text.includes('404')
     || text.includes('not found')
-    || text.includes('could not find');
+    || text.includes('could not find')
+    || text.includes('401')
+    || text.includes('403')
+    || text.includes('bad credentials');
+}
+
+function getUpdateErrorDetail(message) {
+  const text = message.toLowerCase();
+
+  if (text.includes('401') || text.includes('403') || text.includes('bad credentials')) {
+    return [
+      'O repositório GitHub é privado e o app não tem permissão de leitura.',
+      '',
+      'Soluções:',
+      '1. Torne o repositório fomy-desktop público (mais simples), ou',
+      '2. Configure o secret GH_UPDATE_TOKEN no GitHub Actions e gere um novo build.',
+    ].join('\n');
+  }
+
+  return [
+    'Ainda não há release publicado no GitHub, ou o workflow Release não concluiu.',
+    '',
+    'Verifique em:',
+    'github.com/joaopedrosandrade/fomy-desktop/actions',
+    'github.com/joaopedrosandrade/fomy-desktop/releases',
+  ].join('\n');
 }
 
 function registerUpdateEvents() {
@@ -129,12 +155,12 @@ function registerUpdateEvents() {
     manualCheck = false;
 
     if (isBenignError(message)) {
-      console.log('[update] Nenhum release publicado ainda.');
+      console.log('[update] Falha ao acessar releases:', message);
       if (wasManual) {
         showMessage(
           'Verificar atualização',
-          'Nenhuma versão publicada encontrada.',
-          'Publique a primeira release no GitHub (ex.: v1.0.0) para habilitar atualizações automáticas.',
+          'Não foi possível verificar atualizações.',
+          getUpdateErrorDetail(message),
           'warning',
         );
       }
@@ -192,13 +218,29 @@ function registerUpdateEvents() {
 function configureUpdateFeed() {
   if (!app.isPackaged) return;
 
-  autoUpdater.setFeedURL({
+  const auth = loadUpdateAuth();
+  const feed = {
     provider: UPDATE_FEED.provider,
     owner: UPDATE_FEED.owner,
     repo: UPDATE_FEED.repo,
-  });
+    private: auth.private,
+  };
+
+  if (auth.token) {
+    feed.token = auth.token;
+  }
+
+  autoUpdater.setFeedURL(feed);
+
+  if (auth.token) {
+    autoUpdater.requestHeaders = {
+      ...autoUpdater.requestHeaders,
+      Authorization: `token ${auth.token}`,
+    };
+  }
 
   console.log('[update] Feed:', `github://${UPDATE_FEED.owner}/${UPDATE_FEED.repo}`);
+  console.log('[update] Repositório privado:', auth.private);
   console.log('[update] Versão instalada:', getCurrentVersion());
 }
 
