@@ -8,6 +8,8 @@ const {
 } = require('./ipc/printer-handlers');
 const { registerPrintQueueHandlers } = require('./ipc/print-queue-handlers');
 const { registerSystemHandlers } = require('./ipc/system-handlers');
+const { registerUpdateHandlers } = require('./ipc/update-handlers');
+const { isMandatoryWindowOpen } = require('./windows/mandatory-update-window');
 const printQueuePoller = require('./services/print-queue-poller');
 const pairingConfig = require('./services/pairing-config');
 const appSettings = require('./services/app-settings');
@@ -93,15 +95,21 @@ function createWindow() {
 registerPrinterHandlers();
 registerPrintQueueHandlers();
 registerSystemHandlers();
+registerUpdateHandlers();
 
 app.whenReady().then(async () => {
   appSettings.initializeAutoStart();
   updateService.initializeUpdater();
   await initializePrinter();
-  createWindow();
 
-  if (pairingConfig.getPairing()) {
-    printQueuePoller.start();
+  const check = await updateService.checkMandatoryUpdateOnStartup();
+
+  if (!check.required) {
+    createWindow();
+
+    if (pairingConfig.getPairing()) {
+      printQueuePoller.start();
+    }
   }
 });
 
@@ -115,8 +123,12 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+app.on('activate', async () => {
+  if (isMandatoryWindowOpen()) return;
+  if (BrowserWindow.getAllWindows().length > 0) return;
+
+  const check = await updateService.checkMandatoryUpdateOnStartup();
+  if (!check.required) {
     createWindow();
   }
 });

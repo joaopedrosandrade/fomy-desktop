@@ -56,6 +56,35 @@ contextBridge.exposeInMainWorld('fomyDesktop', {
     openPrinterSettings: () => ipcRenderer.invoke('fomy:system:open-printer-settings'),
   },
 
+  update: {
+    getInfo: () => ipcRenderer.invoke('fomy:update:get-info'),
+    download: () => ipcRenderer.invoke('fomy:update:download'),
+    onProgress: (callback) => {
+      if (typeof callback !== 'function') {
+        throw new Error('callback deve ser uma função');
+      }
+      const listener = (_event, data) => callback(data);
+      ipcRenderer.on('fomy:update:progress', listener);
+      return () => ipcRenderer.removeListener('fomy:update:progress', listener);
+    },
+    onReady: (callback) => {
+      if (typeof callback !== 'function') {
+        throw new Error('callback deve ser uma função');
+      }
+      const listener = (_event, data) => callback(data);
+      ipcRenderer.on('fomy:update:ready', listener);
+      return () => ipcRenderer.removeListener('fomy:update:ready', listener);
+    },
+    onError: (callback) => {
+      if (typeof callback !== 'function') {
+        throw new Error('callback deve ser uma função');
+      }
+      const listener = (_event, message) => callback(message);
+      ipcRenderer.on('fomy:update:error', listener);
+      return () => ipcRenderer.removeListener('fomy:update:error', listener);
+    },
+  },
+
   events: {
     onPrintersListRefresh: (callback) => {
       const listener = () => callback();

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Atualização obrigatória — Fomy</title>
+  <link rel="stylesheet" href="mandatory-update.css">
+</head>
+<body>
+  <main class="card">
+    <div class="icon">⬆</div>
+    <h1>Atualização necessária</h1>
+    <p class="lead">
+      Para continuar usando o Fomy, é preciso instalar a versão mais recente.
+    </p>
+
+    <div class="versions">
+      <div class="version-box">
+        <span class="label">Sua versão</span>
+        <strong id="current-version">—</strong>
+      </div>
+      <div class="arrow">→</div>
+      <div class="version-box highlight">
+        <span class="label">Nova versão</span>
+        <strong id="new-version">—</strong>
+      </div>
+    </div>
+
+    <div id="progress-area" class="progress-area hidden">
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <p id="progress-text" class="progress-text">Baixando atualização...</p>
+    </div>
+
+    <p id="error-text" class="error-text hidden"></p>
+
+    <button type="button" id="btn-update" class="primary">Atualizar agora</button>
+    <button type="button" id="btn-retry" class="secondary hidden">Tentar novamente</button>
+  </main>
+
+  <script src="mandatory-update.js"></script>
+</body>
+</html>
