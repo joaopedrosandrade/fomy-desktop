@@ -1,7 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+let appVersion = '0.0.0';
+try {
+  appVersion = ipcRenderer.sendSync('fomy:system:get-version');
+} catch {
+  // ambiente sem handler (testes)
+}
+
 contextBridge.exposeInMainWorld('fomyDesktop', {
   isDesktop: true,
+  version: appVersion,
 
   printer: {
     list: () => ipcRenderer.invoke('fomy:printer:list'),

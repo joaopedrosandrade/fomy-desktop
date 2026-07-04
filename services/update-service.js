@@ -1,6 +1,7 @@
 const { autoUpdater } = require('electron-updater');
-const { app, dialog, BrowserWindow } = require('electron');
+const { app, dialog, BrowserWindow, net } = require('electron');
 const { loadUpdateAuth } = require('./update-auth');
+const { isVersionOlder } = require('./version-utils');
 const {
   getMandatoryWindow,
   isMandatoryWindowOpen,
@@ -90,6 +91,111 @@ function triggerMandatoryUpdate(info) {
   console.log('[update] Atualização obrigatória:', mandatoryInfo);
 
   showMandatoryUpdateWindow(mandatoryInfo, parentWindow);
+}
+
+/**
+ * Consulta a versão mais recente publicada no GitHub Releases.
+ * @returns {Promise<string | null>}
+ */
+function fetchLatestVersionFromGitHub() {
+  return new Promise((resolve) => {
+    const url = `https://api.github.com/repos/${UPDATE_FEED.owner}/${UPDATE_FEED.repo}/releases/latest`;
+
+    const request = net.request({
+      method: 'GET',
+      url,
+      redirect: 'follow',
+    });
+
+    request.setHeader('Accept', 'application/vnd.github+json');
+    request.setHeader('User-Agent', `Fomy-Desktop/${getCurrentVersion()}`);
+
+    const auth = loadUpdateAuth();
+    if (auth.token) {
+      request.setHeader('Authorization', `token ${auth.token}`);
+    }
+
+    let body = '';
+
+    request.on('response', (response) => {
+      response.on('data', (chunk) => {
+        body += chunk.toString('utf8');
+      });
+
+      response.on('end', () => {
+        if (response.statusCode && response.statusCode >= 400) {
+          console.log('[update] GitHub API:', response.statusCode, body.slice(0, 200));
+          resolve(null);
+          return;
+        }
+
+        try {
+          const json = JSON.parse(body);
+          const tag = String(json.tag_name || '').replace(/^v/i, '');
+          resolve(tag || null);
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+
+    request.on('error', (error) => {
+      console.error('[update] Falha na consulta GitHub:', error.message);
+      resolve(null);
+    });
+
+    request.end();
+  });
+}
+
+/**
+ * @returns {Promise<{ required: boolean, version?: string, currentVersion: string, offline?: boolean }>}
+ */
+async function evaluateMandatoryUpdate() {
+  const currentVersion = getCurrentVersion();
+
+  if (!app.isPackaged) {
+    return { required: false, currentVersion };
+  }
+
+  const latestVersion = await fetchLatestVersionFromGitHub();
+
+  if (latestVersion && isVersionOlder(currentVersion, latestVersion)) {
+    pendingUpdateVersion = latestVersion;
+
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[update] Falha ao preparar download:', message);
+    }
+
+    triggerMandatoryUpdate({ version: latestVersion });
+    return { required: true, version: latestVersion, currentVersion };
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const remoteVersion = result?.updateInfo?.version;
+    const updateAvailable = Boolean(result?.isUpdateAvailable)
+      || Boolean(result?.updateInfo && 'isUpdateAvailable' in result && result.isUpdateAvailable);
+
+    if (pendingUpdateVersion && isVersionOlder(currentVersion, pendingUpdateVersion)) {
+      return { required: true, version: pendingUpdateVersion, currentVersion };
+    }
+
+    if (updateAvailable && remoteVersion && isVersionOlder(currentVersion, remoteVersion)) {
+      pendingUpdateVersion = remoteVersion;
+      triggerMandatoryUpdate({ version: remoteVersion });
+      return { required: true, version: remoteVersion, currentVersion };
+    }
+
+    return { required: false, currentVersion };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('[update] Falha na verificação obrigatória:', message);
+    return { required: false, currentVersion, offline: true };
+  }
 }
 
 function isBenignError(message) {
@@ -268,40 +374,39 @@ function configureUpdateFeed() {
  * @returns {Promise<{ required: boolean, version?: string, currentVersion: string }>}
  */
 async function checkMandatoryUpdateOnStartup() {
-  if (!app.isPackaged) {
-    return { required: false, currentVersion: getCurrentVersion() };
+  if (checking && mandatoryActive) {
+    return {
+      required: true,
+      version: pendingUpdateVersion,
+      currentVersion: getCurrentVersion(),
+    };
   }
 
-  if (checking) {
-    return { required: mandatoryActive, version: pendingUpdateVersion, currentVersion: getCurrentVersion() };
-  }
+  return evaluateMandatoryUpdate();
+}
 
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    const remoteVersion = result?.updateInfo?.version;
+/**
+ * Verificação de segurança após a janela principal carregar.
+ * @param {import('electron').BrowserWindow} window
+ */
+async function recheckMandatoryUpdate(window) {
+  if (!app.isPackaged || mandatoryActive || isMandatoryWindowOpen()) return;
 
-    if (pendingUpdateVersion && pendingUpdateVersion !== getCurrentVersion()) {
-      return {
-        required: true,
-        version: pendingUpdateVersion,
-        currentVersion: getCurrentVersion(),
-      };
+  const currentVersion = getCurrentVersion();
+  const latestVersion = await fetchLatestVersionFromGitHub();
+
+  if (latestVersion && isVersionOlder(currentVersion, latestVersion)) {
+    setParentWindow(window);
+    pendingUpdateVersion = latestVersion;
+
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[update] Falha ao preparar download:', message);
     }
 
-    if (remoteVersion && remoteVersion !== getCurrentVersion()) {
-      return {
-        required: true,
-        version: remoteVersion,
-        currentVersion: getCurrentVersion(),
-      };
-    }
-
-    return { required: false, currentVersion: getCurrentVersion() };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('[update] Falha na verificação obrigatória:', message);
-    // Sem internet: permite usar (evita bloquear operação do restaurante)
-    return { required: false, currentVersion: getCurrentVersion(), offline: true };
+    triggerMandatoryUpdate({ version: latestVersion });
   }
 }
 
@@ -312,6 +417,9 @@ async function downloadMandatoryUpdate() {
   }
 
   try {
+    if (!pendingUpdateVersion) {
+      await autoUpdater.checkForUpdates();
+    }
     await autoUpdater.downloadUpdate();
     return { ok: true };
   } catch (error) {
@@ -349,14 +457,15 @@ async function checkForUpdates(options = {}) {
   try {
     const result = await autoUpdater.checkForUpdates();
 
-    if (pendingUpdateVersion && pendingUpdateVersion !== getCurrentVersion()) {
+    if (pendingUpdateVersion && isVersionOlder(getCurrentVersion(), pendingUpdateVersion)) {
       return { ok: true, upToDate: false, version: pendingUpdateVersion };
     }
 
     manualCheck = false;
+    const upToDate = !result?.isUpdateAvailable;
     return {
       ok: true,
-      upToDate: true,
+      upToDate,
       version: result?.updateInfo?.version || getCurrentVersion(),
     };
   } catch (error) {
@@ -390,6 +499,7 @@ module.exports = {
   getMandatoryUpdateInfo,
   initializeUpdater,
   isUpdateReady: () => updateReady,
+  recheckMandatoryUpdate,
   setParentWindow,
   UPDATE_FEED,
 };

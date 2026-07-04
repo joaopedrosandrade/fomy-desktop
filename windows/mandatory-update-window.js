@@ -58,6 +58,11 @@ function showMandatoryUpdateWindow(info, parentWindow = null) {
     { query: Object.fromEntries(query) },
   );
 
+  mandatoryWindow.once('ready-to-show', () => {
+    mandatoryWindow.show();
+    mandatoryWindow.focus();
+  });
+
   mandatoryWindow.on('closed', () => {
     mandatoryWindow = null;
   });

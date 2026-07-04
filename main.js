@@ -80,6 +80,7 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     applyWindowTitle();
     notifyPrinterStatus();
+    updateService.recheckMandatoryUpdate(mainWindow);
   });
 
   mainWindow.on('closed', () => {
