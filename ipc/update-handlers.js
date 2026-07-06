@@ -9,6 +9,10 @@ function registerUpdateHandlers() {
   ipcMain.handle('fomy:update:download', async () => {
     return updateService.downloadMandatoryUpdate();
   });
+
+  ipcMain.handle('fomy:update:install', async () => {
+    return updateService.installDownloadedUpdate();
+  });
 }
 
 module.exports = {

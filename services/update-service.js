@@ -342,22 +342,59 @@ function registerUpdateEvents() {
 }
 
 /**
- * Fecha a tela de atualização e abre o instalador na frente.
+ * Fecha a tela de atualização, pede confirmação e instala silenciosamente.
  */
-function scheduleInstallDownloadedUpdate() {
-  if (installingUpdate) return;
+async function installDownloadedUpdate() {
+  if (!updateReady) {
+    throw new Error('A atualização ainda não foi baixada.');
+  }
+
+  if (installingUpdate) {
+    return { ok: true };
+  }
+
   installingUpdate = true;
+  const version = pendingUpdateVersion || '';
 
-  console.log('[update] Preparando instalação...');
+  console.log('[update] Iniciando instalação da versão', version);
 
-  setTimeout(() => {
-    hideMandatoryUpdateForInstall();
+  // Fecha a tela customizada antes de qualquer outra janela
+  hideMandatoryUpdateForInstall();
 
-    setTimeout(() => {
-      console.log('[update] Executando quitAndInstall');
-      autoUpdater.quitAndInstall(false, true);
-    }, 400);
-  }, 600);
+  await dialog.showMessageBox({
+    type: 'info',
+    title: 'Instalar atualização',
+    message: `A versão ${version} está pronta.`,
+    detail: [
+      'Clique em Instalar para concluir a atualização.',
+      'O Fomy será fechado e reiniciado automaticamente.',
+      'A instalação pode levar alguns segundos.',
+    ].join('\n'),
+    buttons: ['Instalar agora'],
+    defaultId: 0,
+  });
+
+  console.log('[update] Executando instalação silenciosa...');
+  // Silenciosa: não abre o assistente NSIS por baixo da tela de atualização
+  autoUpdater.quitAndInstall(true, true);
+
+  return { ok: true };
+}
+
+function scheduleInstallDownloadedUpdate() {
+  installDownloadedUpdate().catch((error) => {
+    installingUpdate = false;
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[update] Falha na instalação:', message);
+
+    dialog.showMessageBox({
+      type: 'error',
+      title: 'Falha na atualização',
+      message: 'Não foi possível instalar a atualização.',
+      detail: message,
+      buttons: ['OK'],
+    });
+  });
 }
 
 function configureUpdateFeed() {
@@ -431,8 +468,7 @@ async function recheckMandatoryUpdate(window) {
 
 async function downloadMandatoryUpdate() {
   if (updateReady) {
-    scheduleInstallDownloadedUpdate();
-    return { ok: true };
+    return installDownloadedUpdate();
   }
 
   try {
@@ -517,6 +553,7 @@ module.exports = {
   getCurrentVersion,
   getMandatoryUpdateInfo,
   initializeUpdater,
+  installDownloadedUpdate,
   isUpdateReady: () => updateReady,
   recheckMandatoryUpdate,
   setParentWindow,

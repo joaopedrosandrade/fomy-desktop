@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('fomyDesktop', {
   update: {
     getInfo: () => ipcRenderer.invoke('fomy:update:get-info'),
     download: () => ipcRenderer.invoke('fomy:update:download'),
+    install: () => ipcRenderer.invoke('fomy:update:install'),
     onProgress: (callback) => {
       if (typeof callback !== 'function') {
         throw new Error('callback deve ser uma função');

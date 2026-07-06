@@ -24,6 +24,7 @@ function showMandatoryUpdateWindow(info, parentWindow = null) {
     parentWindow.hide();
   }
 
+  // Janela independente (sem parent/modal) para não ficar acima do instalador NSIS
   mandatoryWindow = new BrowserWindow({
     width: 480,
     height: 520,
@@ -36,8 +37,6 @@ function showMandatoryUpdateWindow(info, parentWindow = null) {
     title: 'Atualização necessária — Fomy',
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
-    parent: parentWindow && !parentWindow.isDestroyed() ? parentWindow : undefined,
-    modal: Boolean(parentWindow),
     webPreferences: {
       preload: getPreloadPath(),
       nodeIntegration: false,
@@ -79,15 +78,17 @@ function closeMandatoryUpdateWindow() {
   }
 }
 
-/** Fecha a janela de atualização para o instalador NSIS aparecer na frente. */
+/** Fecha a janela de atualização antes de iniciar o instalador. */
 function hideMandatoryUpdateForInstall() {
   if (!mandatoryWindow || mandatoryWindow.isDestroyed()) return;
 
-  mandatoryWindow.setAlwaysOnTop(false);
-  mandatoryWindow.setClosable(true);
-  mandatoryWindow.hide();
-  mandatoryWindow.close();
+  const win = mandatoryWindow;
   mandatoryWindow = null;
+
+  win.setAlwaysOnTop(false);
+  win.setClosable(true);
+  win.hide();
+  win.destroy();
 }
 
 function isMandatoryWindowOpen() {

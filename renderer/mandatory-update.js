@@ -54,11 +54,29 @@ async function startDownload() {
   }
 }
 
+async function startInstall() {
+  if (!api || downloading) return;
+
+  hideError();
+  downloading = true;
+  btnUpdate.disabled = true;
+  btnUpdate.textContent = 'Instalando...';
+
+  try {
+    await api.install();
+  } catch (error) {
+    showError(error.message || 'Falha ao instalar a atualização.');
+    btnUpdate.textContent = 'Instalar e reiniciar';
+  }
+}
+
 async function init() {
   if (!api) {
     showError('Serviço de atualização indisponível.');
     return;
   }
+
+  let updateReady = false;
 
   const info = await api.getInfo();
   currentEl.textContent = `v${info.currentVersion}`;
@@ -69,19 +87,27 @@ async function init() {
   });
 
   api.onReady(() => {
-    progressText.textContent = 'Abrindo instalador... Esta janela será fechada.';
-    btnUpdate.textContent = 'Instalando...';
+    updateReady = true;
+    progressText.textContent = 'Download concluído! Clique em Instalar para continuar.';
+    btnUpdate.disabled = false;
+    btnUpdate.textContent = 'Instalar e reiniciar';
+    downloading = false;
   });
 
   api.onError((message) => {
     showError(message);
-    btnUpdate.textContent = 'Atualizar agora';
+    btnUpdate.textContent = updateReady ? 'Instalar e reiniciar' : 'Atualizar agora';
   });
 
-  btnUpdate.addEventListener('click', startDownload);
+  btnUpdate.addEventListener('click', () => {
+    if (updateReady) {
+      startInstall();
+    } else {
+      startDownload();
+    }
+  });
   btnRetry.addEventListener('click', startDownload);
 
-  // Inicia download automaticamente ao abrir a tela
   startDownload();
 }
 
