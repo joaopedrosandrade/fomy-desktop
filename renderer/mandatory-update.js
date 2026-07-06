@@ -69,8 +69,8 @@ async function init() {
   });
 
   api.onReady(() => {
-    progressText.textContent = 'Instalando atualização... O app será reiniciado.';
-    btnUpdate.textContent = 'Reiniciando...';
+    progressText.textContent = 'Abrindo instalador... Esta janela será fechada.';
+    btnUpdate.textContent = 'Instalando...';
   });
 
   api.onError((message) => {

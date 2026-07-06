@@ -4,6 +4,7 @@ const { loadUpdateAuth } = require('./update-auth');
 const { isVersionOlder } = require('./version-utils');
 const {
   getMandatoryWindow,
+  hideMandatoryUpdateForInstall,
   isMandatoryWindowOpen,
   showMandatoryUpdateWindow,
 } = require('../windows/mandatory-update-window');
@@ -16,6 +17,7 @@ let updateReady = false;
 let pendingUpdateVersion = null;
 let manualCheck = false;
 let mandatoryActive = false;
+let installingUpdate = false;
 
 /** @type {{ currentVersion: string, newVersion: string } | null} */
 let mandatoryInfo = null;
@@ -222,6 +224,7 @@ function getUpdateErrorDetail(message) {
 function registerUpdateEvents() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoRunAppAfterInstall = true;
   autoUpdater.allowDowngrade = false;
 
   autoUpdater.on('checking-for-update', () => {
@@ -311,11 +314,8 @@ function registerUpdateEvents() {
       version: pendingUpdateVersion,
     });
 
-    // Reinicia automaticamente após download na tela obrigatória
     if (mandatoryActive || isMandatoryWindowOpen()) {
-      setTimeout(() => {
-        autoUpdater.quitAndInstall(false, true);
-      }, 1500);
+      scheduleInstallDownloadedUpdate();
       return;
     }
 
@@ -339,6 +339,25 @@ function registerUpdateEvents() {
       }
     });
   });
+}
+
+/**
+ * Fecha a tela de atualização e abre o instalador na frente.
+ */
+function scheduleInstallDownloadedUpdate() {
+  if (installingUpdate) return;
+  installingUpdate = true;
+
+  console.log('[update] Preparando instalação...');
+
+  setTimeout(() => {
+    hideMandatoryUpdateForInstall();
+
+    setTimeout(() => {
+      console.log('[update] Executando quitAndInstall');
+      autoUpdater.quitAndInstall(false, true);
+    }, 400);
+  }, 600);
 }
 
 function configureUpdateFeed() {
@@ -412,7 +431,7 @@ async function recheckMandatoryUpdate(window) {
 
 async function downloadMandatoryUpdate() {
   if (updateReady) {
-    autoUpdater.quitAndInstall(false, true);
+    scheduleInstallDownloadedUpdate();
     return { ok: true };
   }
 

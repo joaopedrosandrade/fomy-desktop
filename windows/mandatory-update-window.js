@@ -72,9 +72,22 @@ function showMandatoryUpdateWindow(info, parentWindow = null) {
 
 function closeMandatoryUpdateWindow() {
   if (mandatoryWindow && !mandatoryWindow.isDestroyed()) {
+    mandatoryWindow.setAlwaysOnTop(false);
+    mandatoryWindow.setClosable(true);
     mandatoryWindow.close();
     mandatoryWindow = null;
   }
+}
+
+/** Fecha a janela de atualização para o instalador NSIS aparecer na frente. */
+function hideMandatoryUpdateForInstall() {
+  if (!mandatoryWindow || mandatoryWindow.isDestroyed()) return;
+
+  mandatoryWindow.setAlwaysOnTop(false);
+  mandatoryWindow.setClosable(true);
+  mandatoryWindow.hide();
+  mandatoryWindow.close();
+  mandatoryWindow = null;
 }
 
 function isMandatoryWindowOpen() {
@@ -88,6 +101,7 @@ function getMandatoryWindow() {
 module.exports = {
   closeMandatoryUpdateWindow,
   getMandatoryWindow,
+  hideMandatoryUpdateForInstall,
   isMandatoryWindowOpen,
   showMandatoryUpdateWindow,
 };
