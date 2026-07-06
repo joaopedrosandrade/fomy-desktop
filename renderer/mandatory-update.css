@@ -150,6 +150,17 @@ button.secondary {
   font-size: 0.85rem;
 }
 
+.help-text {
+  margin: 0 0 12px;
+  padding: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
 .hidden {
   display: none !important;
 }

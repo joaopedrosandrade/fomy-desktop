@@ -8,6 +8,7 @@ const progressArea = document.getElementById('progress-area');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
 const errorText = document.getElementById('error-text');
+const helpText = document.getElementById('help-text');
 
 let downloading = false;
 
@@ -92,6 +93,7 @@ async function init() {
     btnUpdate.disabled = false;
     btnUpdate.textContent = 'Instalar e reiniciar';
     downloading = false;
+    helpText.classList.remove('hidden');
   });
 
   api.onError((message) => {

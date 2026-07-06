@@ -1,5 +1,6 @@
 const { autoUpdater } = require('electron-updater');
-const { app, dialog, BrowserWindow, net } = require('electron');
+const { app, dialog, BrowserWindow, net, shell } = require('electron');
+const { spawn } = require('child_process');
 const { loadUpdateAuth } = require('./update-auth');
 const { isVersionOlder } = require('./version-utils');
 const {
@@ -18,6 +19,8 @@ let pendingUpdateVersion = null;
 let manualCheck = false;
 let mandatoryActive = false;
 let installingUpdate = false;
+/** @type {string | null} */
+let downloadedInstallerPath = null;
 
 /** @type {{ currentVersion: string, newVersion: string } | null} */
 let mandatoryInfo = null;
@@ -303,21 +306,22 @@ function registerUpdateEvents() {
     });
   });
 
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-downloaded', (info) => {
     updateReady = true;
+    downloadedInstallerPath = info?.downloadedFile || null;
     const win = getParentWindow();
     if (win && !win.isDestroyed()) {
       win.setProgressBar(-1);
     }
 
-    notifyMandatoryWindow('fomy:update:ready', {
-      version: pendingUpdateVersion,
-    });
-
     if (mandatoryActive || isMandatoryWindowOpen()) {
       scheduleInstallDownloadedUpdate();
       return;
     }
+
+    notifyMandatoryWindow('fomy:update:ready', {
+      version: pendingUpdateVersion,
+    });
 
     const options = {
       type: 'info',
@@ -342,7 +346,41 @@ function registerUpdateEvents() {
 }
 
 /**
- * Fecha a tela de atualização, pede confirmação e instala silenciosamente.
+ * Abre o instalador baixado e encerra o app por completo.
+ */
+function launchInstallerAndExit() {
+  const installerPath = downloadedInstallerPath;
+
+  if (!installerPath) {
+    console.log('[update] Caminho do instalador indisponível, usando quitAndInstall');
+    autoUpdater.quitAndInstall(true, true);
+    return;
+  }
+
+  console.log('[update] Abrindo instalador:', installerPath);
+
+  try {
+    const child = spawn(installerPath, [], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+    });
+    child.unref();
+  } catch (error) {
+    console.error('[update] Falha ao abrir instalador, tentando shell.openPath:', error);
+    shell.openPath(installerPath).catch((err) => {
+      console.error('[update] shell.openPath falhou:', err);
+    });
+  }
+
+  // Encerra o processo inteiro — a tela de atualização não pode ficar aberta
+  setImmediate(() => {
+    app.exit(0);
+  });
+}
+
+/**
+ * Fecha a tela de atualização, pede confirmação e abre o instalador.
  */
 async function installDownloadedUpdate() {
   if (!updateReady) {
@@ -358,26 +396,32 @@ async function installDownloadedUpdate() {
 
   console.log('[update] Iniciando instalação da versão', version);
 
-  // Fecha a tela customizada antes de qualquer outra janela
+  // Fecha a tela customizada imediatamente
   hideMandatoryUpdateForInstall();
 
-  await dialog.showMessageBox({
+  const result = await dialog.showMessageBox({
     type: 'info',
     title: 'Instalar atualização',
     message: `A versão ${version} está pronta.`,
     detail: [
-      'Clique em Instalar para concluir a atualização.',
-      'O Fomy será fechado e reiniciado automaticamente.',
-      'A instalação pode levar alguns segundos.',
+      'Ao clicar em Instalar:',
+      '• O Fomy será fechado completamente',
+      '• O instalador abrirá na frente',
+      '• Siga as etapas na tela do instalador',
     ].join('\n'),
-    buttons: ['Instalar agora'],
+    buttons: ['Instalar agora', 'Cancelar'],
     defaultId: 0,
+    cancelId: 1,
   });
 
-  console.log('[update] Executando instalação silenciosa...');
-  // Silenciosa: não abre o assistente NSIS por baixo da tela de atualização
-  autoUpdater.quitAndInstall(true, true);
+  if (result.response !== 0) {
+    installingUpdate = false;
+    mandatoryActive = true;
+    triggerMandatoryUpdate({ version });
+    throw new Error('Instalação cancelada pelo usuário.');
+  }
 
+  launchInstallerAndExit();
   return { ok: true };
 }
 
