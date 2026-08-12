@@ -26,6 +26,17 @@
     </section>
 
     <section class="card">
+      <h2>Largura do papel</h2>
+      <p class="hint">Use 58 mm se a impressora for de bobina estreita — o cupom é gerado com menos colunas para não cortar texto.</p>
+      <label for="paper-mm">Bobina</label>
+      <select id="paper-mm">
+        <option value="80">80 mm (padrão)</option>
+        <option value="58">58 mm</option>
+      </select>
+      <button type="button" id="paper-save" class="primary">Salvar largura</button>
+    </section>
+
+    <section class="card">
       <h2>Tipo de conexão</h2>
       <div class="tabs">
         <button type="button" class="tab active" data-tab="bluetooth">Bluetooth</button>

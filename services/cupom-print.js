@@ -14,7 +14,8 @@ function appendEscPosFormat(cupomUrl) {
  * @param {string} cupomUrl
  */
 async function fetchEscPosBuffer(cupomUrl) {
-  const response = await fetch(appendEscPosFormat(cupomUrl), {
+  const withPaper = printerConfig.withPaperQuery(appendEscPosFormat(cupomUrl));
+  const response = await fetch(withPaper, {
     headers: { Accept: 'application/octet-stream' },
   });
 

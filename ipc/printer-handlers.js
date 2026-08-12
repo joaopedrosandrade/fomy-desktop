@@ -36,6 +36,15 @@ function registerPrinterHandlers() {
     return printerConfig.getPrinterConfig();
   });
 
+  ipcMain.handle('fomy:printer:get-paper-mm', () => {
+    return printerConfig.getPaperMm();
+  });
+
+  ipcMain.handle('fomy:printer:set-paper-mm', (_event, mm) => {
+    printerConfig.setPaperMm(mm);
+    return printerConfig.getPaperMm();
+  });
+
   ipcMain.handle('fomy:printer:get-status', () => {
     return printerService.getStatus();
   });

@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('fomyDesktop', {
     list: () => ipcRenderer.invoke('fomy:printer:list'),
     listBluetooth: () => ipcRenderer.invoke('fomy:printer:list-bluetooth'),
     getConfig: () => ipcRenderer.invoke('fomy:printer:get-config'),
+    getPaperMm: () => ipcRenderer.invoke('fomy:printer:get-paper-mm'),
+    setPaperMm: (mm) => ipcRenderer.invoke('fomy:printer:set-paper-mm', mm),
     getStatus: () => ipcRenderer.invoke('fomy:printer:get-status'),
     saveConfig: (config) => ipcRenderer.invoke('fomy:printer:save-config', config),
     configureBluetooth: (options) => ipcRenderer.invoke('fomy:printer:configure-bluetooth', options),

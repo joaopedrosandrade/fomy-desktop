@@ -137,7 +137,8 @@ async function releaseJobs(apiBaseUrl, token, jobIds) {
 
 /** @param {string} cupomUrl */
 async function fetchEscPosBuffer(cupomUrl) {
-  const response = await fetch(cupomUrl, {
+  const withPaper = printerConfig.withPaperQuery(cupomUrl);
+  const response = await fetch(withPaper, {
     headers: { Accept: 'application/octet-stream' },
   });
 

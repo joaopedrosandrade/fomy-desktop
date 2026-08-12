@@ -210,6 +210,27 @@ document.getElementById('btn-clear').addEventListener('click', async () => {
   }
 });
 
+document.getElementById('paper-save').addEventListener('click', async () => {
+  try {
+    const mm = Number(document.getElementById('paper-mm').value) === 58 ? 58 : 80;
+    await api.setPaperMm(mm);
+    showFeedback(`Largura salva: ${mm} mm`);
+  } catch (error) {
+    showFeedback(error.message || 'Falha ao salvar largura do papel', 'error');
+  }
+});
+
+async function loadPaperMm() {
+  const select = document.getElementById('paper-mm');
+  if (!select || !api?.getPaperMm) return;
+  try {
+    const mm = await api.getPaperMm();
+    select.value = String(mm === 58 ? 58 : 80);
+  } catch {
+    select.value = '80';
+  }
+}
+
 async function init() {
   if (!api) {
     statusTitle.textContent = 'Indisponível';
@@ -222,6 +243,7 @@ async function init() {
     loadBluetoothDevices(),
     loadWindowsPrinters(),
     refreshStatus(),
+    loadPaperMm(),
   ]);
 
   api.onStatusChange((status) => renderStatus(status));

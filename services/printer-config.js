@@ -4,10 +4,11 @@ const store = new Store({
   name: 'printer-config',
   defaults: {
     printer: null,
+    paperMm: 80,
   },
 });
 
-/** @typedef {'network' | 'windows' | 'serial'} PrinterConnectionType */
+/** @typedef {'network' | 'windows' | 'serial' | 'bluetooth'} PrinterConnectionType */
 
 /**
  * @typedef {Object} NetworkPrinterConfig
@@ -21,8 +22,6 @@ const store = new Store({
  * @property {'windows'} type
  * @property {string} printerName
  */
-
-/** @typedef {'network' | 'windows' | 'serial' | 'bluetooth'} PrinterConnectionType */
 
 /**
  * @typedef {Object} BluetoothPrinterConfig
@@ -54,7 +53,37 @@ function setPrinterConfig(config) {
   store.set('printer', config);
 }
 
+/** @returns {58 | 80} */
+function getPaperMm() {
+  return Number(store.get('paperMm', 80)) === 58 ? 58 : 80;
+}
+
+/** @param {unknown} mm */
+function setPaperMm(mm) {
+  store.set('paperMm', Number(mm) === 58 ? 58 : 80);
+}
+
+/**
+ * Anexa ?paper=58|80 à URL do cupom ESC/POS.
+ * @param {string} cupomUrl
+ * @param {number} [paperMm]
+ */
+function withPaperQuery(cupomUrl, paperMm = getPaperMm()) {
+  const paper = paperMm === 58 ? 58 : 80;
+  try {
+    const url = new URL(String(cupomUrl || ''));
+    url.searchParams.set('paper', String(paper));
+    return url.toString();
+  } catch {
+    const sep = String(cupomUrl).includes('?') ? '&' : '?';
+    return `${cupomUrl}${sep}paper=${paper}`;
+  }
+}
+
 module.exports = {
   getPrinterConfig,
   setPrinterConfig,
+  getPaperMm,
+  setPaperMm,
+  withPaperQuery,
 };
